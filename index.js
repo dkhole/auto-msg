@@ -1,21 +1,22 @@
 const puppeteer = require('puppeteer');
 const helper = require('./helper');
 
+const startMessaging = async () => {};
+
 const launch = async () => {
 	//get data from txt files
 	const [userRows, listings, messages] = helper.readFiles();
-
 	//handle edge cases
 	if (userRows.length < 1) {
-		console.log('minimum 1 user. Please update users.txt.');
+		console.log('🚀     minimum 1 user. Please update users.txt.     🚀');
 		return;
 	}
 	if (messages.length < 2) {
-		console.log('minimum 2 messages. Please update messages.txt.');
+		console.log('🚀     minimum 2 messages. Please update messages.txt.     🚀');
 		return;
 	}
 	if (listings.length < 1) {
-		console.log('minimum of 2 listings. Please update listings.txt.');
+		console.log('🚀     minimum of 2 listings. Please update listings.txt.     🚀+--------------++++++++++++++++++++++++++++');
 		return;
 	}
 
@@ -33,12 +34,11 @@ const launch = async () => {
 	//await helper.sendMessage(page, 'https://www.gumtree.com.au/s-ad/randwick/beds/target-double-bed-with-firm-foam-mattress/1274373005', 'Please let me know as i can pick it up tomorrow');
 
 	//loop through users, loop through messages, send to all listings, wait 3 minutes between listings.
+
 	let usersIndex = 0;
 	let messagesIndex = 0;
 	const usersLength = userRows.length;
 	const messagesLength = messages.length;
-
-	console.log(messages);
 
 	for (let listingsInd = 0; listingsInd < listings.length; listingsInd++) {
 		//login with user
@@ -55,12 +55,7 @@ const launch = async () => {
 		await helper.sendMessage(page, listings[listingsInd], messages[messagesIndex]);
 		messagesIndex++;
 		usersIndex++;
-		//console.log('sending message ' + messages[messagesIndex] + ' to listing ' + listing);
-		//console.log(messagesIndex);
 	}
-	//console.log(userRows);
-	//console.log(listings);
-	//console.log(count);
 	await browser.close();
 };
 
