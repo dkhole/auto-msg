@@ -21,7 +21,6 @@ module.exports = {
 
 	login: async (page, email, password) => {
 		await page.goto('https://www.gumtree.com.au/t-login-form.html', { waitUntil: 'domcontentloaded' });
-		//https://www.gumtree.com.au/t-login-form.html?sl=true
 		console.log('🚀   Entering email   🚀');
 		await page.waitForSelector('#login-email');
 		await page.type('#login-email', email);
@@ -38,15 +37,13 @@ module.exports = {
 	sendMessage: async (page, listing, message) => {
 		console.log(`🚀   Navigating to listing   🚀`);
 		await page.goto(listing.url, { waitUntil: 'domcontentloaded' });
+		await page.setDefaultNavigationTimeout(300000);
 		const text = await page.waitForSelector('#input-reply-widget-form-message');
 		await text.click({ clickCount: 3 });
 		const send = message.replace('$', listing.category);
 		await page.type('#input-reply-widget-form-message', send);
-		/*await Promise.all([
-            page.click('#contact-seller-button'),
-            page.waitForNavigation(),
-        ]);
-        console.log(`🚀       Sent message        🚀`);*/
+		//await Promise.all([page.click('#contact-seller-button'), page.waitForNavigation()]);
+		//console.log(`🚀       Sent message        🚀`);
 	},
 
 	sleep: async (ms) => {
