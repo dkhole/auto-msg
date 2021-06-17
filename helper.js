@@ -47,7 +47,7 @@ const sendMessage = async (page, listing, message) => {
 	console.log(`🚀   Typing and sending   🚀`);
 	const send = message.replace('$', mappedCat);
 	await page.type('#input-reply-widget-form-message', send);
-	await Promise.all([page.click('#contact-seller-button'), page.waitForNavigation()]);
+	await page.click('#contact-seller-button');
 	console.log(`🚀       Sent message        🚀`);
 };
 
