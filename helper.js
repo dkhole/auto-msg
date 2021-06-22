@@ -43,18 +43,27 @@ const sendMessage = async (page, listing, message) => {
 		console.log('Error with mapping category');
 		return;
 	}
+	//get and add username
+	const scrapedName = $('.my-gumtree-menu-button__text');
+	const username = scrapedName[0].children[0].data;
+	if(!username) {
+		console.log('Error with getting username');
+		return;
+	}
 	//add mapped category into message
 	console.log(`🚀   Typing and sending   🚀`);
-	const send = message.replace('$', mappedCat);
-	await page.type('#input-reply-widget-form-message', send);
+	const addCat = message.replace('$', mappedCat);
+	const addUsername = addCat.replace('$$', username);
+
+	await page.type('#input-reply-widget-form-message', addUsername);
 	await page.click('#contact-seller-button');
 	console.log(`🚀       Sent message        🚀`);
 };
 
 const sleep = async (ms) => {
-	console.log(`🚀     sleeping for ${ms} ms     🚀`);
+	console.log(`🚀     sleeping for ${ms} mins     🚀`);
 	return new Promise((resolve) => {
-		setTimeout(resolve, ms);
+		setTimeout(resolve, ms * 60000);
 	});
 };
 
@@ -98,7 +107,7 @@ const startMessaging = async (userRows, listings, messages) => {
 	const usersLength = userRows.length;
 	const messagesLength = messages.length;
 	//loop through listings
-	for (let listingsInd = 0; listingsInd < listings.length; listingsInd++) {
+	for (let listingsInd = 0; listingsInd < listings.length; listingsInd++, messagesIndex++, usersIndex++) {
 		//reset index for users/messages to repeat them if we've reached the end
 		usersIndex = resetIndex(usersIndex, usersLength);
 		messagesIndex = resetIndex(messagesIndex, messagesLength);
@@ -106,14 +115,15 @@ const startMessaging = async (userRows, listings, messages) => {
 		await login(page, userRows[usersIndex].username, userRows[usersIndex].password);
 		console.log('logging in with ' + userRows[usersIndex].username + ' and ' + userRows[usersIndex].password);
 		await sendMessage(page, listings[listingsInd], messages[messagesIndex]);
-		messagesIndex++;
 		listingsInd++;
-		//wait two minutes
-		await sleep(20000);
-		await sendMessage(page, listings[listingsInd], messages[messagesIndex]);
 		messagesIndex++;
-		usersIndex++;
+		messagesIndex = resetIndex(messagesIndex, messagesLength);
+		//wait two minutes
+		await sleep(2);
+		await sendMessage(page, listings[listingsInd], messages[messagesIndex]);		
 	}
+
+	console.log(`🚀       Finished sending to ${listings.length} listings        🚀`);
 	await browser.close();
 };
 

@@ -8,8 +8,8 @@ const launch = async () => {
 		console.log('🚀     minimum 1 user. Please update users.txt.     🚀');
 		return;
 	}
-	if (messages.length < 2) {
-		console.log('🚀     minimum 2 messages. Please update messages.txt.     🚀');
+	if (messages.length < 1) {
+		console.log('🚀     minimum 1 message. Please update messages.txt.     🚀');
 		return;
 	}
 	if (listings.length < 1) {
@@ -17,8 +17,8 @@ const launch = async () => {
 		return;
 	}
 
-	console.log(`Loaded ${userRows.length} users from users.txt`);
-	console.log(`Loaded ${messages.length} messages from messages.txt`);
+	console.log(`Loaded ${userRows.length} user(s) from users.txt`);
+	console.log(`Loaded ${messages.length} message(s) from messages.txt`);
 	console.log(`Loaded ${listings.length} listings from listings.txt`);
 
 	helper.recursiveAsyncReadLineData(userRows, listings, messages);
