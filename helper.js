@@ -53,7 +53,7 @@ const sendMessage = async (page, listing, message) => {
 	//add mapped category into message
 	console.log(`🚀   Typing and sending   🚀`);
 	const addCat = message.replace('$', mappedCat);
-	const addUsername = addCat.replace('$$', username);
+	const addUsername = addCat.replace('@', username);
 
 	await page.type('#input-reply-widget-form-message', addUsername);
 	await page.click('#contact-seller-button');
@@ -74,34 +74,58 @@ const resetIndex = (index, length) => {
 	return index;
 };
 
-const recursiveAsyncReadLineBrowser = (userRows, listings, messages) => {
-	rl.question('Are you ready to start? (yes/no)', (browser) => {
-		if (browser === 'yes') {
-			startMessaging(userRows, listings, messages);
-			rl.close();
-		} else if (browser === 'no') {
-			console.log('Ctrl + C to quit / restart');
-			recursiveAsyncReadLineBrowser(userRows, listings, messages);
+const recursiveAsyncReadLineTimeout = (userRows, listings, messages) => {
+	rl.question('Enter sleep times in the format t1 t2 eg. \'1.4 3\':\n', (input) => {
+		const times = input.split(' ');
+		if(times.length === 2 && !isNaN(parseFloat(times[0])) && !isNaN(parseFloat(times[1]))) {
+			console.log(`Entered t1 = ${times[0]} and t2 = ${times[1]}`);
+			const timeouts = times.map(time => { return parseFloat(time)});
+			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
 		} else {
-			recursiveAsyncReadLineBrowser(userRows, listings, messages);
+			console.log('Incorrect format, try again');
+			recursiveAsyncReadLineTimeout(userRows, listings, messages);
 		}
 	});
 };
 
-const startMessaging = async (userRows, listings, messages) => {
-	//launch puppeteer
-	const browser = await puppeteer.launch({ headless: false });
-	const [page] = await browser.pages();
-
-	//gets past gumtrees antiscrape
-	await page.evaluateOnNewDocument(() => {
-		Object.defineProperty(navigator, 'webdriver', {
-			get: () => false,
-		});
+const recursiveAsyncReadLineBrowser = (userRows, listings, messages, timeouts) => {
+	rl.question('Are you ready to start? (yes/no)\n', (browser) => {
+		if (browser === 'yes') {
+			startMessaging(userRows, listings, messages, timeouts);
+			rl.close();
+		} else if (browser === 'no') {
+			console.log('Ctrl + C to quit / restart');
+			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
+		} else {
+			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
+		}
 	});
+};
 
-	//loop through users, loop through messages, send to all listings, wait 3 minutes between listings.
+const iterateWithOneUser = async(messages, userRows, page, listings, timeouts) => {
+	let messagesIndex = 0;
+	const messagesLength = messages.length;
+	console.log('logging in with ' + userRows[0].username + ' and ' + userRows[0].password);
 
+	//loop through listings
+	for (let listingsInd = 0; listingsInd < listings.length; listingsInd++, messagesIndex++) {
+		//reset index for messages to repeat them if we've reached the end
+		
+		messagesIndex = resetIndex(messagesIndex, messagesLength);
+		await sendMessage(page, listings[listingsInd], messages[messagesIndex]);
+		listingsInd++;
+		messagesIndex++;
+		messagesIndex = resetIndex(messagesIndex, messagesLength);
+		//wait two minutes
+		if(listingsInd < listings.length) {
+			await sleep(timeouts[0]);
+			await sendMessage(page, listings[listingsInd], messages[messagesIndex]);		
+			await sleep(timeouts[1]);
+		}
+	}
+}
+
+const iterateWithUsers = async(messages, userRows, page, listings, timeouts) => {
 	let usersIndex = 0;
 	let messagesIndex = 0;
 	const usersLength = userRows.length;
@@ -119,8 +143,33 @@ const startMessaging = async (userRows, listings, messages) => {
 		messagesIndex++;
 		messagesIndex = resetIndex(messagesIndex, messagesLength);
 		//wait two minutes
-		await sleep(2);
-		await sendMessage(page, listings[listingsInd], messages[messagesIndex]);		
+		if(listingsInd < listings.length) {
+			await sleep(timeouts[0]);
+			await sendMessage(page, listings[listingsInd], messages[messagesIndex]);		
+			await sleep(timeouts[1]);
+		}
+	}
+}
+
+const startMessaging = async (userRows, listings, messages, timeouts) => {
+	//launch puppeteer
+	const browser = await puppeteer.launch({ headless: false });
+	const [page] = await browser.pages();
+
+	//gets past gumtrees antiscrape
+	await page.evaluateOnNewDocument(() => {
+		Object.defineProperty(navigator, 'webdriver', {
+			get: () => false,
+		});
+	});
+
+	//loop through users, loop through messages, send to all listings, wait 3 minutes between listings.
+	//if one user dont relogout/login
+	if(userRows.length === 1) {
+		await login(page, userRows[0].username, userRows[0].password);
+		await iterateWithOneUser(messages, userRows, page, listings, timeouts);
+	} else {
+		await iterateWithUsers(messages, userRows, page, listings, timeouts);
 	}
 
 	console.log(`🚀       Finished sending to ${listings.length} listings        🚀`);
@@ -129,7 +178,7 @@ const startMessaging = async (userRows, listings, messages) => {
 
 module.exports = {
 	recursiveAsyncReadLineData: (userRows, listings, messages) => {
-		rl.question('Do you want to view the input data? (yes/no)', (view) => {
+		rl.question('Do you want to view the input data? (yes/no)\n', (view) => {
 			if (view === 'yes') {
 				console.log(`~ Users (${userRows.length})`);
 				console.log(userRows);
@@ -137,9 +186,9 @@ module.exports = {
 				console.log(listings);
 				console.log(`~ Messages (${messages.length})`);
 				console.table(messages);
-				recursiveAsyncReadLineBrowser(userRows, listings, messages);
+				recursiveAsyncReadLineTimeout(userRows, listings, messages);
 			} else if (view === 'no') {
-				recursiveAsyncReadLineBrowser(userRows, listings, messages);
+				recursiveAsyncReadLineTimeout(userRows, listings, messages);
 			} else {
 				recursiveAsyncReadLineData(userRows, listings, messages);
 			}
