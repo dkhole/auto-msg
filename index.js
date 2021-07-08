@@ -1,8 +1,9 @@
-const helper = require('./helper');
+const helpers = require('./helpers');
+const input = require('./input');
 
 const launch = async () => {
 	//get data from txt files
-	const [userRows, listings, messages] = helper.readFiles();
+	const [userRows, listings, messages] = helpers.readFiles();
 	//handle edge cases
 	if (userRows.length < 1) {
 		console.log('🚀     minimum 1 user. Please update users.txt.     🚀');
@@ -13,7 +14,7 @@ const launch = async () => {
 		return;
 	}
 	if (listings.length < 1) {
-		console.log('🚀     minimum of 2 listings. Please update listings.txt.     🚀+--------------++++++++++++++++++++++++++++');
+		console.log('🚀     minimum of 2 listings. Please update listings.txt.     🚀');
 		return;
 	}
 
@@ -21,7 +22,7 @@ const launch = async () => {
 	console.log(`Loaded ${messages.length} message(s) from messages.txt`);
 	console.log(`Loaded ${listings.length} listings from listings.txt`);
 
-	helper.recursiveAsyncReadLineData(userRows, listings, messages);
+	input.start(userRows, listings, messages);
 };
 
 launch();
