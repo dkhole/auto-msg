@@ -3,6 +3,10 @@
     "puppeteer": "^9.1.1"
   },
   "dependencies": {
-    "cheerio": "^1.0.0-rc.10"
+    "cheerio": "^1.0.0-rc.10",
+    "puppeteer-extra": "^3.1.18",
+    "puppeteer-extra-plugin-stealth": "^2.7.8",
+    "random-useragent": "^0.5.0",
+    "user-agents": "^1.0.700"
   }
 }

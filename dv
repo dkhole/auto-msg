@@ -27,7 +27,7 @@ const stealthSettings = async(page) => {
 		isLandscape: false,
 		isMobile: false,
 	});
-	console.log(userAgent);
+
 	await page.setUserAgent(userAgent);
 	await page.setJavaScriptEnabled(true);
 	await page.setDefaultNavigationTimeout(0);
@@ -87,6 +87,7 @@ const stealthSettings = async(page) => {
 }
 
 const login = async (page, email, password) => {
+	await stealthSettings(page);
 	await page.goto('https://www.gumtree.com.au/t-login-form.html', { waitUntil: 'domcontentloaded' });
 	console.log('🚀   Entering email   🚀');
 	await page.waitForSelector('#login-email');
@@ -138,6 +139,7 @@ const sendMessage = async (page, listing, message, userRows = 0) => {
 		//if username is my gumtree need to log back in
 		if(username === 'My Gumtree') {
 			await login(page, userRows[0].username, userRows[0].password);
+			await stealthSettings(page);
 			await page.goto(listing.url, { waitUntil: 'domcontentloaded' });
 			const $ = cheerio.load(await page.content());
 			const scrapedName = $('.my-gumtree-menu-button__text');
@@ -148,7 +150,7 @@ const sendMessage = async (page, listing, message, userRows = 0) => {
 	}
 	await text.click({ clickCount: 3 });
 	await page.type('#input-reply-widget-form-message', addUsername);
-	//await page.click('#contact-seller-button');
+	await page.click('#contact-seller-button');
 	console.log(`🚀       Sent message        🚀`);
 };
 
@@ -164,6 +166,34 @@ const resetIndex = (index, length) => {
 		index = 0;
 	}
 	return index;
+};
+
+const recursiveAsyncReadLineTimeout = (userRows, listings, messages) => {
+	rl.question('Enter sleep times in the format t1 t2 eg. \'1.4 3\':\n', (input) => {
+		const times = input.split(' ');
+		if(times.length === 2 && !isNaN(parseFloat(times[0])) && !isNaN(parseFloat(times[1]))) {
+			console.log(`Entered t1 = ${times[0]} and t2 = ${times[1]}`);
+			const timeouts = times.map(time => { return parseFloat(time)});
+			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
+		} else {
+			console.log('Incorrect format, try again');
+			recursiveAsyncReadLineTimeout(userRows, listings, messages);
+		}
+	});
+};
+
+const recursiveAsyncReadLineBrowser = (userRows, listings, messages, timeouts) => {
+	rl.question('Are you ready to start? (yes/no)\n', (browser) => {
+		if (browser === 'yes') {
+			startMessaging(userRows, listings, messages, timeouts);
+			rl.close();
+		} else if (browser === 'no') {
+			console.log('Ctrl + C to quit / restart');
+			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
+		} else {
+			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
+		}
+	});
 };
 
 const iterateWithOneUser = async(messages, userRows, page, listings, timeouts) => {
@@ -217,7 +247,7 @@ const iterateWithUsers = async(messages, userRows, page, listings, timeouts) => 
 
 const startMessaging = async (userRows, listings, messages, timeouts) => {
 	//launch puppeteer
-	const browser = await puppeteer.launch({ headless: false, slowMo: 50 });
+	const browser = await puppeteer.launch({ headless: false });
 	const [page] = await browser.pages();
 
 	//gets past gumtrees antiscrape
@@ -238,34 +268,6 @@ const startMessaging = async (userRows, listings, messages, timeouts) => {
 
 	console.log(`🚀       Finished sending to ${listings.length} listings        🚀`);
 	await browser.close();
-};
-
-const recursiveAsyncReadLineTimeout = (userRows, listings, messages) => {
-	rl.question('Enter sleep times in the format t1 t2 eg. \'1.4 3\':\n', (input) => {
-		const times = input.split(' ');
-		if(times.length === 2 && !isNaN(parseFloat(times[0])) && !isNaN(parseFloat(times[1]))) {
-			console.log(`Entered t1 = ${times[0]} and t2 = ${times[1]}`);
-			const timeouts = times.map(time => { return parseFloat(time)});
-			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
-		} else {
-			console.log('Incorrect format, try again');
-			recursiveAsyncReadLineTimeout(userRows, listings, messages);
-		}
-	});
-};
-
-const recursiveAsyncReadLineBrowser = (userRows, listings, messages, timeouts) => {
-	rl.question('Are you ready to start? (yes/no)\n', (browser) => {
-		if (browser === 'yes') {
-			startMessaging(userRows, listings, messages, timeouts);
-			rl.close();
-		} else if (browser === 'no') {
-			console.log('Ctrl + C to quit / restart');
-			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
-		} else {
-			recursiveAsyncReadLineBrowser(userRows, listings, messages, timeouts);
-		}
-	});
 };
 
 module.exports = {
