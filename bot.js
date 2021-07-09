@@ -79,7 +79,7 @@ module.exports = {
         try {
             await text.click({ clickCount: 3 });
             await page.type('#input-reply-widget-form-message', addUsername);
-            //await page.click('#contact-seller-button');
+            await page.click('#contact-seller-button');
             console.log(`🚀       Sent message        🚀`);
             return;
         } catch {
