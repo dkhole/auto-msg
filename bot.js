@@ -13,7 +13,14 @@ const startLogin = async(page, email, password) => {
 
     console.log('🚀   Logging in   🚀');
 
-    await Promise.all([page.click('#btn-submit-login'), page.waitForNavigation()]);
+    //page somtimes freezes after logging in so catch statement and try again if it does
+    //can potentially create infinite loop
+    try {
+        await Promise.all([page.click('#btn-submit-login'), page.waitForNavigation()]);
+    } catch {
+        await startLogin(page, email, password);
+    }
+    
     console.log(`🚀   Logged In to gumtree as ${email}   🚀`);
 }
 
@@ -24,23 +31,22 @@ module.exports = {
 
 	sendMessage: async (page, listing, message, userRows = 0) => {
         console.log(`🚀   Navigating to listing   🚀`);
-        //generate and set a new user agent
-        //const userAgent = new UserAgent();
+        //apply stealth settings
         await stealth.apply(page);
         await page.goto(listing.url, { waitUntil: 'domcontentloaded' });
         await page.setDefaultNavigationTimeout(300000);
-        let text = await page.waitForSelector('#input-reply-widget-form-message');
         
-        //get and map category
+        //get category
         console.log(`🚀   Getting and mapping category   🚀`);
         await page.waitForSelector('.breadcrumbs__separator');
         const content = await page.content();
         const $ = cheerio.load(content);
         const breadcrumbs = $('.breadcrumbs__separator');
         const category = breadcrumbs.last().prev();
+        //map category
         const mappedCat = MapCategories.mapCategories(category.text());
         if(!mappedCat) {
-            console.log('Error with mapping category');
+            console.log('Cant find listing');
             return;
         }
         //get and add username
@@ -51,6 +57,9 @@ module.exports = {
         console.log(`🚀   Typing and sending   🚀`);
         const addCat = message.replace('$', mappedCat);
         let addUsername;
+
+        let text = await page.waitForSelector('#input-reply-widget-form-message');
+
         if(!username) {
             console.log('Error with getting username');
             addUsername = addCat.replace('@', 'furniture');
@@ -66,9 +75,16 @@ module.exports = {
             }
             addUsername = addCat.replace('@', username);
         }
-        await text.click({ clickCount: 3 });
-        await page.type('#input-reply-widget-form-message', addUsername);
-        //await page.click('#contact-seller-button');
-        console.log(`🚀       Sent message        🚀`);
+        
+        try {
+            await text.click({ clickCount: 3 });
+            await page.type('#input-reply-widget-form-message', addUsername);
+            //await page.click('#contact-seller-button');
+            console.log(`🚀       Sent message        🚀`);
+            return;
+        } catch {
+            console.log('cant find listing');
+            return;
+        }
     }
 };
