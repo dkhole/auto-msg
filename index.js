@@ -24,5 +24,5 @@ const launch = async () => {
 
 	input.start(userRows, listings, messages);
 };
-
-launch();
+//disabled
+//launch();
